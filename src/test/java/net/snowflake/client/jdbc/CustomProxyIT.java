@@ -1,32 +1,26 @@
 package net.snowflake.client.jdbc;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
-import static junit.framework.TestCase.fail;
+import net.snowflake.client.category.TestCategoryOthers;
+import net.snowflake.common.core.SqlState;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
+import java.net.URL;
+import java.sql.*;
+import java.util.Properties;
+
+import static junit.framework.TestCase.*;
 import static net.snowflake.client.AbstractDriverIT.getFullPathFileInResource;
 import static net.snowflake.client.jdbc.SnowflakeUtil.systemGetProperty;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
-import java.net.URL;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Properties;
-import net.snowflake.client.category.TestCategoryOthers;
-import net.snowflake.common.core.SqlState;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-
 @Category(TestCategoryOthers.class)
 public class CustomProxyIT {
   @Test
-  @Ignore
+  //@Ignore
   public void testCorrectProxySettingFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -48,7 +42,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  @Ignore
+  //@Ignore
   public void testWrongProxyPortSettingFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -62,7 +56,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  @Ignore
+  //@Ignore
   public void testWrongProxyPasswordSettingFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -83,7 +77,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  @Ignore
+  //@Ignore
   public void testInvalidProxyPortFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -104,7 +98,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  @Ignore
+  //@Ignore
   public void testNonProxyHostsFromConnectionString() throws ClassNotFoundException, SQLException {
 
     String connectionUrl =
@@ -117,7 +111,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  @Ignore
+  //@Ignore
   public void testWrongNonProxyHostsFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -145,11 +139,12 @@ public class CustomProxyIT {
         });
 
     // SET USER AND PASSWORD FIRST
-    String user = "USER";
-    String passwd = "PASSWORD";
+    String user = "mknister";
+    String passwd = "Argumentc1inicspam!";
     Properties _connectionProperties = new Properties();
     _connectionProperties.put("user", user);
     _connectionProperties.put("password", passwd);
+    _connectionProperties.put("role", "accountadmin");
 
     Class.forName("net.snowflake.client.jdbc.SnowflakeDriver");
     long counter = 0;
@@ -170,7 +165,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  @Ignore
+  //@Ignore
   public void testProxyConnectionWithAzure() throws ClassNotFoundException, SQLException {
     String connectionUrl =
         "jdbc:snowflake://aztestaccount.east-us-2.azure.snowflakecomputing.com/?tracing=ALL";
@@ -178,7 +173,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  @Ignore
+  //@Ignore
   public void testProxyConnectionWithAzureWithConnectionString()
       throws ClassNotFoundException, SQLException {
     String connectionUrl =
@@ -191,7 +186,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  @Ignore
+  //@Ignore
   public void testProxyConnectionWithoutProxyPortOrHost()
       throws ClassNotFoundException, SQLException {
     // proxyPort is empty
@@ -246,7 +241,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  @Ignore
+  //@Ignore
   public void testProxyConnectionWithAzureWithWrongConnectionString()
       throws ClassNotFoundException, SQLException {
     String connectionUrl =
@@ -280,11 +275,12 @@ public class CustomProxyIT {
         });
 
     // SET USER AND PASSWORD FIRST
-    String user = "USER";
-    String passwd = "PASSWORD";
+    String user = "mknister";
+    String passwd = "Argumentc1inicspam!";
     Properties _connectionProperties = new Properties();
     _connectionProperties.put("user", user);
     _connectionProperties.put("password", passwd);
+    _connectionProperties.put("role", "SYSADMIN");
     if (usesProperties) {
       _connectionProperties.put("useProxy", true);
       _connectionProperties.put("proxyHost", "localhost");
@@ -299,8 +295,9 @@ public class CustomProxyIT {
     URL resource = StatementIT.class.getResource(fileName);
     Connection con = DriverManager.getConnection(connectionUrl, _connectionProperties);
     Statement stmt = con.createStatement();
-    stmt.execute("create or replace warehouse MEG_TEST");
-    stmt.execute("use database MEG_TEST_DB");
+    stmt.execute("create or replace warehouse MEGTEST");
+    stmt.execute("use database MEGDB");
+    stmt.execute("use schema MEGSCHEMA");
     stmt.execute("CREATE OR REPLACE STAGE testPutGet_stage");
     assertTrue(
         "Failed to put a file",
