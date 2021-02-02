@@ -196,7 +196,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  @Ignore
+  // @Ignore
   public void testProxyConnectionWithAzureWithConnectionString()
       throws ClassNotFoundException, SQLException {
     String connectionUrl =
@@ -296,11 +296,11 @@ public class CustomProxyIT {
           }
         });
 
-    /*System.setProperty("http.useProxy", "true");
-    System.setProperty("http.proxyHost", "localhost");
-    System.setProperty("http.proxyPort", "8080");
-    System.setProperty("https.proxyHost", "localhost");
-    System.setProperty("https.proxyPort", "8080");*/
+    System.setProperty("http.useProxy", "true");
+    System.setProperty("http.proxyHost", "fakehost");
+    System.setProperty("http.proxyPort", "8081");
+    System.setProperty("https.proxyHost", "fakehost");
+    System.setProperty("https.proxyPort", "8081");
 
     // SET USER AND PASSWORD FIRST
     String user = "mknister";

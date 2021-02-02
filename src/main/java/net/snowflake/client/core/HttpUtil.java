@@ -4,7 +4,7 @@
 
 package net.snowflake.client.core;
 
-import static net.snowflake.client.jdbc.SnowflakeUtil.systemGetProperty;
+import static net.snowflake.client.jdbc.SnowflakeUtil.*;
 import static org.apache.http.client.config.CookieSpecs.DEFAULT;
 import static org.apache.http.client.config.CookieSpecs.IGNORE_COOKIES;
 
@@ -94,6 +94,7 @@ public class HttpUtil {
   static String proxyUser;
   static String proxyPassword;
   static String nonProxyHosts;
+  static String httpUseProxy;
 
   public static long getDownloadedConditionTimeoutInSeconds() {
     return DEFAULT_DOWNLOADED_CONDITION_TIMEOUT;
@@ -635,5 +636,44 @@ public class HttpUtil {
       proxyPassword = (String) connectionPropertiesMap.get(SFSessionProperty.PROXY_PASSWORD);
       nonProxyHosts = (String) connectionPropertiesMap.get(SFSessionProperty.NON_PROXY_HOSTS);
     }
+
+    httpUseProxy = systemGetProperty("http.useProxy").trim();
+    if (httpUseProxy.equalsIgnoreCase("true")) {
+      String httpProxyHost = systemGetProperty("http.proxyHost");
+      String httpProxyPort = systemGetProperty("http.proxyPort");
+      String httpsProxyHost = systemGetProperty("https.proxyHost");
+      String httpsProxyPort = systemGetProperty("https.proxyPort");
+      String noProxy = systemGetEnv("NO_PROXY");
+      logger.debug(
+          "http.useProxy={}, http.proxyHost={}, http.proxyPort={}, https.proxyHost={}, https.proxyPort={}, NO_PROXY={}",
+          httpUseProxy,
+          httpProxyHost,
+          httpProxyPort,
+          httpsProxyHost,
+          httpsProxyPort,
+          noProxy);
+    } else {
+      logger.debug("http.useProxy={}. JVM proxy not used.", httpUseProxy);
+    }
+    if (useProxy) {
+      systemSetProperty("http.useProxy", "false");
+      systemSetProperty("http.proxyHost", "");
+      systemSetProperty("https.proxyHost", "");
+      systemSetProperty("http.proxyPort", "");
+      systemSetProperty("https.proxyPort", "");
+      logger.debug("JVM proxy parameters overridden by connection parameters proxy values.");
+    }
+    logger.debug(
+        "connection proxy parameters: use_proxy={}, proxy_host={}, proxy_port={}, proxy_user={}, proxy_password={}, non_proxy_hosts={}",
+        useProxy,
+        proxyHost,
+        proxyPort,
+        proxyUser,
+        !Strings.isNullOrEmpty(proxyPassword) ? "***" : "(empty)",
+        nonProxyHosts);
+  }
+
+  public static void restoreDefaultJVMProxySettings() {
+    systemSetProperty("http.useProxy", httpUseProxy);
   }
 }
