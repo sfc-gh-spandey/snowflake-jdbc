@@ -3,33 +3,13 @@
  */
 package net.snowflake.client.jdbc.cloud.storage;
 
-import static net.snowflake.client.jdbc.SnowflakeUtil.systemGetProperty;
-
 import com.amazonaws.util.Base64;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.storage.*;
-import com.microsoft.azure.storage.StorageCredentials;
-import com.microsoft.azure.storage.StorageCredentialsAnonymous;
-import com.microsoft.azure.storage.StorageCredentialsSharedAccessSignature;
-import com.microsoft.azure.storage.StorageException;
 import com.microsoft.azure.storage.blob.*;
-import com.microsoft.azure.storage.blob.CloudBlobClient;
-import com.microsoft.azure.storage.blob.CloudBlobContainer;
-import com.microsoft.azure.storage.blob.ListBlobItem;
-import java.io.*;
-import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
-import java.util.*;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import net.snowflake.client.core.HttpUtil;
 import net.snowflake.client.core.ObjectMapperFactory;
 import net.snowflake.client.core.SFSession;
@@ -40,6 +20,16 @@ import net.snowflake.client.util.SFPair;
 import net.snowflake.common.core.RemoteStoreFileEncryptionMaterial;
 import net.snowflake.common.core.SqlState;
 import org.apache.commons.io.IOUtils;
+
+import java.io.*;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.InvalidKeyException;
+import java.util.*;
+import java.util.AbstractMap.SimpleEntry;
+
+import static net.snowflake.client.jdbc.SnowflakeUtil.systemGetProperty;
 
 /**
  * Encapsulates the Azure Storage client and all Azure Storage operations and logic
@@ -97,7 +87,6 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
     this.session = sfSession;
 
     logger.debug("Setting up the Azure client ");
-    opContext = new OperationContext();
 
     try {
       URI storageEndpoint =
@@ -126,8 +115,9 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
               encryptionKeySize);
         }
       }
-      HttpUtil.setProxyForAzure(opContext);
       this.azStorageClient = new CloudBlobClient(storageEndpoint, azCreds);
+      opContext = new OperationContext();
+      HttpUtil.setProxyForAzure(opContext);
     } catch (URISyntaxException ex) {
       throw new IllegalArgumentException("invalid_azure_credentials");
     }
@@ -201,7 +191,10 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
       Iterable<ListBlobItem> listBlobItemIterable =
           container.listBlobs(
               prefix, // List the BLOBs under this prefix
-              true // List the BLOBs as a flat list, i.e. do not list directories
+              true, // List the BLOBs as a flat list, i.e. do not list directories
+              EnumSet.noneOf(BlobListingDetails.class),
+              (BlobRequestOptions)null,
+              opContext
               );
       storageObjectSummaries = new StorageObjectSummaryCollection(listBlobItemIterable);
     } catch (URISyntaxException | StorageException ex) {
@@ -226,7 +219,7 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
     try {
       // Get a reference to the BLOB, to retrieve its metadata
       CloudBlobContainer container = azStorageClient.getContainerReference(remoteStorageLocation);
-      CloudBlob blob = container.getBlockBlobReference(prefix);
+      CloudBlob blob = (CloudBlockBlob) container.getBlobReferenceFromServer(prefix, null, null, null, opContext);
       blob.downloadAttributes();
 
       // Get the user-defined BLOB metadata
@@ -286,7 +279,7 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
         String localFilePath = localLocation + localFileSep + destFileName;
         File localFile = new File(localFilePath);
         CloudBlobContainer container = azStorageClient.getContainerReference(remoteStorageLocation);
-        CloudBlob blob = container.getBlockBlobReference(stageFilePath);
+        CloudBlob blob = (CloudBlockBlob) container.getBlobReferenceFromServer(stageFilePath, null, null, null, opContext);//container.getBlockBlobReference(stageFilePath);
 
         // Note that Azure doesn't offer a multi-part parallel download library,
         // where the user has control of block size and parallelism
@@ -366,7 +359,7 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
       try {
         CloudBlobContainer container = azStorageClient.getContainerReference(remoteStorageLocation);
 
-        CloudBlob blob = container.getBlockBlobReference(stageFilePath);
+        CloudBlob blob = (CloudBlockBlob) container.getBlobReferenceFromServer(stageFilePath, null, null, null, opContext); //container.getBlockBlobReference(stageFilePath);
 
         InputStream stream = blob.openInputStream();
 
@@ -471,7 +464,7 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
         CloudBlobContainer container = azStorageClient.getContainerReference(remoteStorageLocation);
         CloudBlockBlob blob = container.getBlockBlobReference(destFileName);
 
-        // Set the user-defined/Snowflake metadata and upload the BLOB
+                // Set the user-defined/Snowflake metadata and upload the BLOB
         blob.setMetadata((HashMap<String, String>) meta.getUserMetadata());
 
         // Note that Azure doesn't offer a multi-part parallel upload library,
@@ -480,7 +473,8 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
         // in the Azure implementation of the method
         blob.upload(
             fileInputStream, // input stream to upload from
-            -1 // -1 indicates an unknown stream length
+            -1, // -1 indicates an unknown stream length
+                null, null, opContext
             );
         logger.debug("Upload successful");
 

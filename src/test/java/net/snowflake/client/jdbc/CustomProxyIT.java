@@ -26,17 +26,16 @@ public class CustomProxyIT {
 
     String connectionUrl =
         "jdbc:snowflake://s3testaccount.us-east-1.snowflakecomputing.com/?tracing=ALL"
-            + "&proxyHost=localhost&proxyPort=3128"
-            + "&proxyUser=testuser1&proxyPassword=test"
-            + "&nonProxyHosts=*.foo.com%7Clocalhost&useProxy=true";
+            + "&proxyHost=localhost&proxyPort=8080"
+            + "&useProxy=true";
     // should finish correctly
     runProxyConnection(connectionUrl);
 
-    connectionUrl =
+    /*connectionUrl =
         "jdbc:snowflake://s3testaccount.us-east-1.snowflakecomputing.com/?tracing=ALL"
             + "&proxyHost=localhost&proxyPort=3128"
             + "&proxyUser=testuser1&proxyPassword=test"
-            + "&useProxy=true";
+            + "&useProxy=true";*/
     // should finish correctly
     runProxyConnection(connectionUrl);
   }
@@ -138,6 +137,12 @@ public class CustomProxyIT {
           }
         });
 
+    System.setProperty("http.useProxy", "true");
+    System.setProperty("http.proxyHost", "localhost");
+    System.setProperty("http.proxyPort", "8080");
+    System.setProperty("https.proxyHost", "localhost");
+    System.setProperty("https.proxyPort", "8080");
+
     // SET USER AND PASSWORD FIRST
     String user = "mknister";
     String passwd = "Argumentc1inicspam!";
@@ -145,6 +150,8 @@ public class CustomProxyIT {
     _connectionProperties.put("user", user);
     _connectionProperties.put("password", passwd);
     _connectionProperties.put("role", "accountadmin");
+    _connectionProperties.put("database", "SNOWHOUSE_IMPORT");
+    _connectionProperties.put("schema", "DEV");
 
     Class.forName("net.snowflake.client.jdbc.SnowflakeDriver");
     long counter = 0;
@@ -152,12 +159,17 @@ public class CustomProxyIT {
       Connection con = DriverManager.getConnection(connectionUrl, _connectionProperties);
       Statement stmt = con.createStatement();
       stmt.execute("use warehouse TINY_WAREHOUSE");
-      String sql = "select $1 from values(1),(3),(5),(7)";
+      stmt.execute("CREATE OR REPLACE STAGE testPutGet_stage");
+      assertTrue(
+              "Failed to put a file",
+              stmt.execute(
+                      "PUT file://" + getFullPathFileInResource("orders_100.csv") + " @testPutGet_stage"));
+      /*String sql = "select $1 from values(1),(3),(5),(7)";
       ResultSet res = stmt.executeQuery(sql);
       while (res.next()) {
         System.out.println("value: " + res.getInt(1));
       }
-      System.out.println("OK - " + counter);
+      System.out.println("OK - " + counter);*/
       con.close();
       counter++;
       break;
@@ -178,9 +190,8 @@ public class CustomProxyIT {
       throws ClassNotFoundException, SQLException {
     String connectionUrl =
         "jdbc:snowflake://aztestaccount.east-us-2.azure.snowflakecomputing.com/?tracing=ALL"
-            + "&proxyHost=localhost&proxyPort=3128"
-            + "&proxyUser=testuser1&proxyPassword=test"
-            + "&nonProxyHosts=*.foo.com%7Clocalhost&useProxy=true";
+            + "&proxyHost=localhost&proxyPort=8080"
+            + "&useProxy=true";
     ;
     runAzureProxyConnection(connectionUrl, false);
   }
@@ -273,6 +284,13 @@ public class CustomProxyIT {
                 systemGetProperty("http.proxyPassword").toCharArray());
           }
         });
+
+    /*System.setProperty("http.useProxy", "true");
+    System.setProperty("http.proxyHost", "localhost");
+    System.setProperty("http.proxyPort", "8080");
+    System.setProperty("https.proxyHost", "localhost");
+    System.setProperty("https.proxyPort", "8080");*/
+
 
     // SET USER AND PASSWORD FIRST
     String user = "mknister";
