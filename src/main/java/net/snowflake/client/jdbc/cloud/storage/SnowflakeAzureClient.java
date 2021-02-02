@@ -279,23 +279,16 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
         String localFilePath = localLocation + localFileSep + destFileName;
         File localFile = new File(localFilePath);
         CloudBlobContainer container = azStorageClient.getContainerReference(remoteStorageLocation);
-        CloudBlob blob =
-            (CloudBlockBlob)
-                container.getBlobReferenceFromServer(
-                    stageFilePath,
-                    null,
-                    null,
-                    null,
-                    opContext); // container.getBlockBlobReference(stageFilePath);
+        CloudBlob blob = container.getBlockBlobReference(stageFilePath);
 
         // Note that Azure doesn't offer a multi-part parallel download library,
         // where the user has control of block size and parallelism
         // we rely on Azure to handle the download, hence the "parallelism" parameter is ignored
         // in the Azure implementation of the method
-        blob.downloadToFile(localFilePath);
+        blob.downloadToFile(localFilePath, null, null, opContext);
 
         // Pull object metadata from Azure
-        blob.downloadAttributes();
+        blob.downloadAttributes(null, null, opContext);
 
         // Get the user-defined BLOB metadata
         Map<String, String> userDefinedMetadata = blob.getMetadata();

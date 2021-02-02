@@ -1,25 +1,37 @@
 package net.snowflake.client.jdbc;
 
-import static junit.framework.TestCase.*;
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.fail;
 import static net.snowflake.client.AbstractDriverIT.getFullPathFileInResource;
+import static net.snowflake.client.jdbc.SnowflakeDriverIT.findFile;
 import static net.snowflake.client.jdbc.SnowflakeUtil.systemGetProperty;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.net.URL;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Properties;
 import net.snowflake.client.category.TestCategoryOthers;
 import net.snowflake.common.core.SqlState;
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
 
 @Category(TestCategoryOthers.class)
 public class CustomProxyIT {
+  @Rule public TemporaryFolder tmpFolder = new TemporaryFolder();
+
   @Test
-  // @Ignore
+  @Ignore
   public void testCorrectProxySettingFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -40,7 +52,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  // @Ignore
+  @Ignore
   public void testWrongProxyPortSettingFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -54,7 +66,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  // @Ignore
+  @Ignore
   public void testWrongProxyPasswordSettingFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -75,7 +87,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  // @Ignore
+  @Ignore
   public void testInvalidProxyPortFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -96,7 +108,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  // @Ignore
+  @Ignore
   public void testNonProxyHostsFromConnectionString() throws ClassNotFoundException, SQLException {
 
     String connectionUrl =
@@ -109,7 +121,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  // @Ignore
+  @Ignore
   public void testWrongNonProxyHostsFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -176,7 +188,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  // @Ignore
+  @Ignore
   public void testProxyConnectionWithAzure() throws ClassNotFoundException, SQLException {
     String connectionUrl =
         "jdbc:snowflake://aztestaccount.east-us-2.azure.snowflakecomputing.com/?tracing=ALL";
@@ -184,7 +196,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  // @Ignore
+  @Ignore
   public void testProxyConnectionWithAzureWithConnectionString()
       throws ClassNotFoundException, SQLException {
     String connectionUrl =
@@ -196,7 +208,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  // @Ignore
+  @Ignore
   public void testProxyConnectionWithoutProxyPortOrHost()
       throws ClassNotFoundException, SQLException {
     // proxyPort is empty
@@ -251,7 +263,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  // @Ignore
+  @Ignore
   public void testProxyConnectionWithAzureWithWrongConnectionString()
       throws ClassNotFoundException, SQLException {
     String connectionUrl =
@@ -315,9 +327,41 @@ public class CustomProxyIT {
     stmt.execute("use database MEGDB");
     stmt.execute("use schema MEGSCHEMA");
     stmt.execute("CREATE OR REPLACE STAGE testPutGet_stage");
-    assertTrue(
-        "Failed to put a file",
-        stmt.execute(
-            "PUT file://" + getFullPathFileInResource("orders_100.csv") + " @testPutGet_stage"));
+
+    try {
+      String TEST_DATA_FILE = "orders_100.csv";
+      String sourceFilePath = getFullPathFileInResource(TEST_DATA_FILE);
+      File destFolder = tmpFolder.newFolder();
+      String destFolderCanonicalPath = destFolder.getCanonicalPath();
+      String destFolderCanonicalPathWithSeparator = destFolderCanonicalPath + File.separator;
+      assertTrue(
+          "Failed to put a file",
+          stmt.execute("PUT file://" + sourceFilePath + " @testPutGet_stage"));
+      findFile(stmt, "ls @testPutGet_stage/");
+
+      // download the file we just uploaded to stage
+      assertTrue(
+          "Failed to get a file",
+          stmt.execute(
+              "GET @testPutGet_stage 'file://" + destFolderCanonicalPath + "' parallel=8"));
+
+      // Make sure that the downloaded file exists, it should be gzip compressed
+      File downloaded = new File(destFolderCanonicalPathWithSeparator + TEST_DATA_FILE + ".gz");
+      assert (downloaded.exists());
+
+      Process p =
+          Runtime.getRuntime()
+              .exec("gzip -d " + destFolderCanonicalPathWithSeparator + TEST_DATA_FILE + ".gz");
+      p.waitFor();
+
+      File original = new File(sourceFilePath);
+      File unzipped = new File(destFolderCanonicalPathWithSeparator + TEST_DATA_FILE);
+      assert (original.length() == unzipped.length());
+    } catch (Throwable t) {
+      t.printStackTrace();
+    } finally {
+      stmt.execute("DROP STAGE IF EXISTS testGetPut_stage");
+      stmt.close();
+    }
   }
 }
