@@ -3,6 +3,8 @@
  */
 package net.snowflake.client.jdbc.cloud.storage;
 
+import static net.snowflake.client.jdbc.SnowflakeUtil.systemGetProperty;
+
 import com.amazonaws.util.Base64;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
@@ -10,6 +12,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.azure.storage.*;
 import com.microsoft.azure.storage.blob.*;
+import java.io.*;
+import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.InvalidKeyException;
+import java.util.*;
+import java.util.AbstractMap.SimpleEntry;
 import net.snowflake.client.core.HttpUtil;
 import net.snowflake.client.core.ObjectMapperFactory;
 import net.snowflake.client.core.SFSession;
@@ -20,16 +29,6 @@ import net.snowflake.client.util.SFPair;
 import net.snowflake.common.core.RemoteStoreFileEncryptionMaterial;
 import net.snowflake.common.core.SqlState;
 import org.apache.commons.io.IOUtils;
-
-import java.io.*;
-import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.InvalidKeyException;
-import java.util.*;
-import java.util.AbstractMap.SimpleEntry;
-
-import static net.snowflake.client.jdbc.SnowflakeUtil.systemGetProperty;
 
 /**
  * Encapsulates the Azure Storage client and all Azure Storage operations and logic
@@ -193,9 +192,8 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
               prefix, // List the BLOBs under this prefix
               true, // List the BLOBs as a flat list, i.e. do not list directories
               EnumSet.noneOf(BlobListingDetails.class),
-              (BlobRequestOptions)null,
-              opContext
-              );
+              (BlobRequestOptions) null,
+              opContext);
       storageObjectSummaries = new StorageObjectSummaryCollection(listBlobItemIterable);
     } catch (URISyntaxException | StorageException ex) {
       logger.debug("Failed to list objects: {}", ex);
@@ -219,7 +217,9 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
     try {
       // Get a reference to the BLOB, to retrieve its metadata
       CloudBlobContainer container = azStorageClient.getContainerReference(remoteStorageLocation);
-      CloudBlob blob = (CloudBlockBlob) container.getBlobReferenceFromServer(prefix, null, null, null, opContext);
+      CloudBlob blob =
+          (CloudBlockBlob)
+              container.getBlobReferenceFromServer(prefix, null, null, null, opContext);
       blob.downloadAttributes();
 
       // Get the user-defined BLOB metadata
@@ -279,7 +279,14 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
         String localFilePath = localLocation + localFileSep + destFileName;
         File localFile = new File(localFilePath);
         CloudBlobContainer container = azStorageClient.getContainerReference(remoteStorageLocation);
-        CloudBlob blob = (CloudBlockBlob) container.getBlobReferenceFromServer(stageFilePath, null, null, null, opContext);//container.getBlockBlobReference(stageFilePath);
+        CloudBlob blob =
+            (CloudBlockBlob)
+                container.getBlobReferenceFromServer(
+                    stageFilePath,
+                    null,
+                    null,
+                    null,
+                    opContext); // container.getBlockBlobReference(stageFilePath);
 
         // Note that Azure doesn't offer a multi-part parallel download library,
         // where the user has control of block size and parallelism
@@ -359,7 +366,14 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
       try {
         CloudBlobContainer container = azStorageClient.getContainerReference(remoteStorageLocation);
 
-        CloudBlob blob = (CloudBlockBlob) container.getBlobReferenceFromServer(stageFilePath, null, null, null, opContext); //container.getBlockBlobReference(stageFilePath);
+        CloudBlob blob =
+            (CloudBlockBlob)
+                container.getBlobReferenceFromServer(
+                    stageFilePath,
+                    null,
+                    null,
+                    null,
+                    opContext); // container.getBlockBlobReference(stageFilePath);
 
         InputStream stream = blob.openInputStream();
 
@@ -464,7 +478,7 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
         CloudBlobContainer container = azStorageClient.getContainerReference(remoteStorageLocation);
         CloudBlockBlob blob = container.getBlockBlobReference(destFileName);
 
-                // Set the user-defined/Snowflake metadata and upload the BLOB
+        // Set the user-defined/Snowflake metadata and upload the BLOB
         blob.setMetadata((HashMap<String, String>) meta.getUserMetadata());
 
         // Note that Azure doesn't offer a multi-part parallel upload library,
@@ -474,8 +488,9 @@ public class SnowflakeAzureClient implements SnowflakeStorageClient {
         blob.upload(
             fileInputStream, // input stream to upload from
             -1, // -1 indicates an unknown stream length
-                null, null, opContext
-            );
+            null,
+            null,
+            opContext);
         logger.debug("Upload successful");
 
         blob.uploadMetadata();

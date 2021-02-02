@@ -1,26 +1,25 @@
 package net.snowflake.client.jdbc;
 
-import net.snowflake.client.category.TestCategoryOthers;
-import net.snowflake.common.core.SqlState;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
-import java.net.URL;
-import java.sql.*;
-import java.util.Properties;
-
 import static junit.framework.TestCase.*;
 import static net.snowflake.client.AbstractDriverIT.getFullPathFileInResource;
 import static net.snowflake.client.jdbc.SnowflakeUtil.systemGetProperty;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
+import java.net.URL;
+import java.sql.*;
+import java.util.Properties;
+import net.snowflake.client.category.TestCategoryOthers;
+import net.snowflake.common.core.SqlState;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
 @Category(TestCategoryOthers.class)
 public class CustomProxyIT {
   @Test
-  //@Ignore
+  // @Ignore
   public void testCorrectProxySettingFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -32,16 +31,16 @@ public class CustomProxyIT {
     runProxyConnection(connectionUrl);
 
     /*connectionUrl =
-        "jdbc:snowflake://s3testaccount.us-east-1.snowflakecomputing.com/?tracing=ALL"
-            + "&proxyHost=localhost&proxyPort=3128"
-            + "&proxyUser=testuser1&proxyPassword=test"
-            + "&useProxy=true";*/
+    "jdbc:snowflake://s3testaccount.us-east-1.snowflakecomputing.com/?tracing=ALL"
+        + "&proxyHost=localhost&proxyPort=3128"
+        + "&proxyUser=testuser1&proxyPassword=test"
+        + "&useProxy=true";*/
     // should finish correctly
     runProxyConnection(connectionUrl);
   }
 
   @Test
-  //@Ignore
+  // @Ignore
   public void testWrongProxyPortSettingFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -55,7 +54,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  //@Ignore
+  // @Ignore
   public void testWrongProxyPasswordSettingFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -76,7 +75,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  //@Ignore
+  // @Ignore
   public void testInvalidProxyPortFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -97,7 +96,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  //@Ignore
+  // @Ignore
   public void testNonProxyHostsFromConnectionString() throws ClassNotFoundException, SQLException {
 
     String connectionUrl =
@@ -110,7 +109,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  //@Ignore
+  // @Ignore
   public void testWrongNonProxyHostsFromConnectionString()
       throws ClassNotFoundException, SQLException {
 
@@ -161,9 +160,9 @@ public class CustomProxyIT {
       stmt.execute("use warehouse TINY_WAREHOUSE");
       stmt.execute("CREATE OR REPLACE STAGE testPutGet_stage");
       assertTrue(
-              "Failed to put a file",
-              stmt.execute(
-                      "PUT file://" + getFullPathFileInResource("orders_100.csv") + " @testPutGet_stage"));
+          "Failed to put a file",
+          stmt.execute(
+              "PUT file://" + getFullPathFileInResource("orders_100.csv") + " @testPutGet_stage"));
       /*String sql = "select $1 from values(1),(3),(5),(7)";
       ResultSet res = stmt.executeQuery(sql);
       while (res.next()) {
@@ -177,7 +176,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  //@Ignore
+  // @Ignore
   public void testProxyConnectionWithAzure() throws ClassNotFoundException, SQLException {
     String connectionUrl =
         "jdbc:snowflake://aztestaccount.east-us-2.azure.snowflakecomputing.com/?tracing=ALL";
@@ -185,7 +184,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  //@Ignore
+  // @Ignore
   public void testProxyConnectionWithAzureWithConnectionString()
       throws ClassNotFoundException, SQLException {
     String connectionUrl =
@@ -197,7 +196,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  //@Ignore
+  // @Ignore
   public void testProxyConnectionWithoutProxyPortOrHost()
       throws ClassNotFoundException, SQLException {
     // proxyPort is empty
@@ -252,7 +251,7 @@ public class CustomProxyIT {
   }
 
   @Test
-  //@Ignore
+  // @Ignore
   public void testProxyConnectionWithAzureWithWrongConnectionString()
       throws ClassNotFoundException, SQLException {
     String connectionUrl =
@@ -290,7 +289,6 @@ public class CustomProxyIT {
     System.setProperty("http.proxyPort", "8080");
     System.setProperty("https.proxyHost", "localhost");
     System.setProperty("https.proxyPort", "8080");*/
-
 
     // SET USER AND PASSWORD FIRST
     String user = "mknister";
